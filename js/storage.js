@@ -180,75 +180,22 @@
 			console.log(this.records);
 		}
 	}
-	class WebSql {
+	class SqlQuery {
 
-		constructor(dbConfig) {
-			this.database = this.createDatabase(dbConfig);
-		}
+		constructor() {}
 
-		createDatabase(dbConfig) {
-			return openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
-		}
-
-		createTable(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createSQlCreateQuery(queryConfig));
-			});
-		}
-
-		insertIntoTabel(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createInsertQuery(queryConfig));
-			});
-		}
-
-		selectRecords(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createSelectQuery(queryConfig));
-			});
-		}
-
-		updateRecord(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createUpdateQuery(queryConfig));
-			});
-		}
-
-		deleteRecord(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createDeleteQuery(queryConfig));
-			});
-		}
-
-		drop(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createDropQuery(queryConfig));
-			});
-		}
-
-		truncateTable(tableName) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, "TRUNCATE TABLE" + tableName);
-			});
-		}
-
-		alterTable(queryConfig) {
-			this.database.transaction((event) => {
-				this.executeTransaction(event, this.createAlterQuery(queryConfig));
-			});
-		} 
-
-		createSQlCreateQuery(queryConfig) {
-			let createSyntax = "CREATE TABLE IF NOT EXISTS" + queryConfig.tableName;
+		static createSQlCreateQuery(queryConfig) {
+			let sqlquery = new SqlQuery();
+			let createSyntax = "CREATE TABLE IF NOT EXISTS " + queryConfig.tableName;
 			let columns = '';
 			for(let config of queryConfig.columnsToCreate) {
-				columns += columns === '' ? config.columnName + " " + config.dataType + "(" + config.size + ") " + this.extractConstraints(config.constraints) : 
-									"," +config.columnName + " " + config.dataType + "(" + config.size + ") " + this.extractConstraints(config.constraints);
+				columns += columns === '' ? config.columnName + " " + config.dataType + "(" + config.size + ") " + sqlquery.extractConstraints(config.constraints) : 
+									"," +config.columnName + " " + config.dataType + "(" + config.size + ") " + sqlquery.extractConstraints(config.constraints);
 			}
 			return createSyntax + "(id INTEGER PRIMARY KEY AUTOINCREMENT," + columns + ");"; 
 		}
 
-		createInsertQuery(queryConfig) {
+		static createInsertQuery(queryConfig) {
 			let insertSyntax = "INSERT INTO " + queryConfig.tableName;
 			let columnValue = '';
 			let values = '';
@@ -259,34 +206,36 @@
 			return insertSyntax + " (" + columnValue + ") values(" + values + ")";
 		}
 
-		createSelectQuery(queryConfig) {
+		static createSelectQuery(queryConfig) {
+			let sqlquery = new SqlQuery();
 			let query = '';
 			let functions = '';
 			if(queryConfig.functions !== '') {
-				functions = this.extractFunctions(queryConfig.functions);
+				functions = sqlquery.extractFunctions(queryConfig.functions);
 			}
 			let selectedColumns = queryConfig.columns === '' ? "SELECT * " + functions : "SELECT " + functions + " " + queryConfig.columns;
 			if(queryConfig.clauses !== '') {
-				query =  selectedColumns + " FROM " + queryConfig.tableName + this.extractClauses(queryConfig.clauses);
+				query =  selectedColumns + " FROM " + queryConfig.tableName + sqlquery.extractClauses(queryConfig.clauses);
 			} else {
 				query = selectedColumns + " FROM " + queryConfig.tableName;
 			}
 			return query; 
 		}
 
-		createUpdateQuery(queryConfig) {
+		static createUpdateQuery(queryConfig) {
+			let sqlquery = new SqlQuery();
 			let query = 'UPDATE ' + queryConfig.tableName + " set ";
 			for(let updateSet of queryConfig.updatesToBeDone) {
 				query += " " + updateSet.columnName + " = '" + updateSet.value + "'";
 			}
-			let conditions = this.extractClauses(queryConfig.conditions); 
+			let conditions = sqlquery.extractClauses(queryConfig.conditions); 
 			if(conditions !== '') {
 				query + " " + conditions;
 			}
 			return query;
 		}
 
-		createDeleteQuery(queryConfig) {
+		static createDeleteQuery(queryConfig) {
 			let query = 'DELETE FROM ' + queryConfig.tableName;
 			let deleteCondition = '';
 			if(queryConfig.conditions) {
@@ -297,11 +246,11 @@
 			}
 		}
 
-		createDropQuery(queryConfig) {
+		static createDropQuery(queryConfig) {
 			return "DROP " + queryConfig.dropping + " " + queryConfig.name;
 		}
 
-		createAlterQuery(queryConfig) {
+		static createAlterQuery(queryConfig) {
 			let query = '';
 			if(queryConfig.alter.key.toLowerCase() === 'modify') {
 				query =	"ALTER TABLE " + queryConfig.tableName  + " " + queryConfig.alter.key + " COLUMN " + queryConfig.alter.columnName + " " + queryConfig.alter.dataType + 
@@ -314,14 +263,6 @@
 						" (" + queryConfig.alter.size + ")";
 			}
 			return query;
-		}
-
-		executeTransaction(event, query) {
-			try {
-				event.executeSql(query , [], this.resultHandler, this.errorHandler);
-			} catch(e) {
-				throw (e);
-			}
 		}
 
 		extractFunctions(functions) {
@@ -352,6 +293,115 @@
 				}
 			}
 			return clauseInSelect;
+		}
+	}
+	class WebSql extends SqlQuery {
+
+		constructor(dbConfig) {
+			super();
+			this.database = this.createDatabase(dbConfig);
+		}
+
+		createDatabase(dbConfig) {
+			return openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
+		}
+
+		createTable(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createSQlCreateQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		insertIntoTabel(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createInsertQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		selectRecords(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createSelectQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		updateRecord(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createUpdateQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		deleteRecord(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createDeleteQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		drop(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createDropQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		truncateTable(tableName) {
+			this.database.transaction((event) => {
+				this.executeTransaction(event, "TRUNCATE TABLE" + tableName);
+			});
+		}
+
+		alterTable(queryConfig) {
+			let query = '';
+			if(typeof(queryConfig) === 'object'){
+				query = SqlQuery.createAlterQuery(queryConfig);
+			} else {
+				query = queryConfig;
+			}
+			this.database.transaction((event) => {
+				this.executeTransaction(event, query);
+			});
+		}
+
+		executeTransaction(event, query) {
+			try {
+				event.executeSql(query , [], this.resultHandler, this.errorHandler);
+			} catch(e) {
+				throw (e);
+			}
 		}
 
 		errorHandler (event, error) {
