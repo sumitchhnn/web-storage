@@ -3,22 +3,8 @@
 	<head>
 		<title>Web Storage</title>
 		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+		<link rel="stylesheet" href="css/index.css">
 		<script type="text/javascript" src="js/storage.js"></script>
-		<style>
-			.main-container {padding-right: 0px;padding-left: 0px;}
-			.main-container > div {margin-right: 0px;padding-right: 0px;margin-left: 0px;padding-left: 0px;}
-			.main-container > div:not(:first-child) {padding: 5%;}
-			.tabs {padding: 2px;background: #612561;border-radius: 2px;}
-			.tabs > button {padding: 5px 15px;}
-			.header {
-				background: #612561;
-				color: white;
-				padding: 1%;
-				font-size: 1.5em;
-				font-weight: bold;
-				font-family: serif;
-			}
-		</style>
 	</head>
 	<body>
 		<div class="container-fluid main-container">
@@ -61,6 +47,12 @@
 			<div class="row">
 				<div class="col-xs-12">
 					<label>Indexed DB</label>
+					<form>
+						<div class="form-group">
+							<textarea rows="5" col="5" class="form-control"></textarea>
+							<button class="btn btn-default">Submit</button>
+						</div>
+					</form>
 				</div>
 			</div>
 			<div class="row">
@@ -87,12 +79,38 @@
 			tableName: 'storage',
 			size: 20
 		});
-
+		userSelection();
 		function userSelection() {
-			let selection = document.getElementsByClassName('tabs');
-			console.log(selection);
+			let selection = document.getElementsByClassName('tabs')[0].children;
+			selection[0].setAttribute('class', 'selected');
+			for(let select of selection) {
+				select.addEventListener('click', changeUserSelection);
+			}
+			changePlaceHolder();
 		}
 
+		function changeUserSelection(event) {
+			let childs = document.getElementsByClassName('tabs')[0].children;
+			for(let child of childs) {
+				child.classList.remove('selected');
+			}
+			event.currentTarget.setAttribute('class', 'selected');
+			changePlaceHolder();
+		}
+
+		function changePlaceHolder() {
+			let selection = document.getElementsByClassName('tabs')[0].children;
+			let argument = document.getElementsByClassName('tab-result')[0].children[0];
+			for(let select of selection) {
+				if(select.innerText === 'Query' && select.classList.contains('selected')) {
+					argument.setAttribute('placeholder', 'Write you SQL query here..');
+					return;
+				} else {
+					argument.setAttribute('placeholder', 'Write you JSON here..');
+				}
+			}
+		}
+			
 		/*function submitValues() {
 			storage.setData(document.getElementById('attribute').value, document.getElementById('value').value);
 		}

@@ -1,0 +1,29 @@
+.main-container {padding-right: 0px;padding-left: 0px; /*background: url(../background.jpg);*/}
+.main-container > div {margin-right: 0px;padding-right: 0px;margin-left: 0px;padding-left: 0px;}
+.main-container > div:not(:first-child) {padding: 5%;}
+.main-container label {font-size: 20px;}
+.tabs {padding: 2px; background: #612561; border-radius: 2px;}
+.tabs > button {
+	background: #3991A5;
+    color: #fff;
+    font-weight: 400;
+    font-size: 20px;
+    border-radius: 0px;
+    padding: 0 45px;
+    letter-spacing: normal;
+    height: 52px;
+    line-height: 52px;
+    border: none;
+}
+.header {
+	background: #612561;
+	color: white;
+	padding: 1%;
+	font-size: 1.5em;
+	font-weight: bold;
+	font-family: serif;
+}
+.selected {
+    color: black !important;
+    border: 1px solid silver !important;
+}
